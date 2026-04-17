@@ -599,7 +599,7 @@ async function callClaude(system, user) {
   if (!key) { showApiModal(); throw new Error('No API key'); }
 
   const body = {
-    model: 'claude-sonnet-4-5',
+    model: 'claude-sonnet-4-20250514',
     max_tokens: 1000,
     system,
     messages: [{ role: 'user', content: user }]
