@@ -631,8 +631,8 @@ async function loadFromNotion() {
   document.getElementById('err-url').style.display = 'none';
 
   const btn = document.getElementById('pull-btn');
-  btn.textContent = 'Loading…'; btn.disabled = true;
-  setNotionBadge(false, 'Connecting…');
+  btn.textContent = 'Loading...'; btn.disabled = true;
+  setNotionBadge(false, 'Connecting...');
 
   try {
     const slug = url.split('/').pop().replace(/-[a-f0-9]{32}$/i, '').replace(/-/g, ' ');
@@ -656,7 +656,7 @@ async function loadFromNotion() {
 function toSlack(text) {
   return text
     .replace(/\*\*(.*?)\*\*/g, '*$1*')
-    .replace(/^- /gm, '• ');
+    .replace(/^- /gm, '* ');
 }
 function copyPlain(id, btn) {
   navigator.clipboard.writeText(document.getElementById(id).innerText).then(() => {
@@ -685,7 +685,7 @@ async function generate() {
   document.getElementById('err-input').style.display = 'none';
 
   const btn = document.getElementById('gen-btn');
-  btn.textContent = 'Generating…'; btn.disabled = true;
+  btn.textContent = 'Generating...'; btn.disabled = true;
 
   showScreen('screen-output');
   outputs = { vp: '', gm: '', team: '' };
@@ -699,22 +699,22 @@ Next steps: ${nextsteps}${extras ? '\nAdditional context: ' + extras : ''}`;
     {
       id: 'out-vp', key: 'vp',
       system: `You are a senior product lead writing a weekly update for your VP. Concise, executive-ready.
-Format: Line 1 = "Week of [week]". Blank line. Then 3–5 bullet points using "- " prefix. Lead with outcomes, not activities. Flag high-priority risks only. Plain text only.`
+Format: Line 1 = "Week of [week]". Blank line. Then 3-5 bullet points using "- " prefix. Lead with outcomes, not activities. Flag high-priority risks only. Plain text only.`
     },
     {
       id: 'out-gm', key: 'gm',
       system: `You are a senior product lead writing a weekly update for your General Manager. Focus on business impact, revenue implications, risk framing.
-Format: Line 1 = "Week of [week]". Then three labeled sections: "Progress:", "Risks:", "Next steps:" — each followed by 2–3 sentences. Plain text, no bullet points, no headers.`
+Format: Line 1 = "Week of [week]". Then three labeled sections: "Progress:", "Risks:", "Next steps:" — each followed by 2-3 sentences. Plain text, no bullet points, no headers.`
     },
     {
       id: 'out-team', key: 'team',
       system: `You are a senior product lead writing a detailed internal team update. Specific, direct, action-oriented.
-Format: Line 1 = "Week of [week]". Then sections: "✅ Done:", "⚠️ Blockers:", "🔜 Next week:", and if needed "Action items:". Under each, use "- " bullets. Be specific about owners and deadlines. Warm but professional.`
+Format: Line 1 = "Week of [week]". Then four sections, each on its own line: "Done:", "Blockers:", "Next week:", "Action items:" (only if needed). Under each section use "- " bullet points. Be specific about owners and deadlines. Warm but professional tone.`
     }
   ];
 
   jobs.forEach(job => {
-    document.getElementById(job.id).innerHTML = '<div class="loading-row"><div class="spin"></div>Generating…</div>';
+    document.getElementById(job.id).innerHTML = '<div class="loading-row"><div class="spin"></div>Generating...</div>';
   });
 
   await Promise.all(jobs.map(async job => {
@@ -722,13 +722,19 @@ Format: Line 1 = "Week of [week]". Then sections: "✅ Done:", "⚠️ Blockers:
     try {
       const result = await callClaude(job.system, context);
       outputs[job.key] = result.trim();
-      el.textContent = result.trim();
+      let display = result.trim();
+      display = display.replace(/^Done:/gm, '\u2705 Done:');
+      display = display.replace(/^Blockers:/gm, '\u26a0 Blockers:');
+      display = display.replace(/^Next week:/gm, '\U0001f51c Next week:');
+      display = display.replace(/^Action items:/gm, '[Action items:');
+      el.textContent = display;
+      outputs[job.key] = display;
     } catch (e) {
       el.textContent = 'Something went wrong — please try again. (' + e.message + ')';
     }
   }));
 
-  btn.textContent = 'Generate updates →'; btn.disabled = false;
+  btn.textContent = 'Generate updates ->'; btn.disabled = false;
 }
 
 /* ── Save to Notion ── */
@@ -740,8 +746,8 @@ async function saveToNotion() {
     info.innerHTML = '<strong>Still generating</strong> — wait a moment then try again.'; return;
   }
 
-  btn.textContent = 'Saving…'; btn.disabled = true;
-  info.textContent = 'Saving to Notion…';
+  btn.textContent = 'Saving...'; btn.disabled = true;
+  info.textContent = 'Saving to Notion...';
 
   const title = `Weekly recap — ${weekOf}`;
   const content = `## VP update\n${outputs.vp}\n\n---\n\n## GM update\n${outputs.gm}\n\n---\n\n## Team update\n${outputs.team}`;
@@ -755,7 +761,7 @@ async function saveToNotion() {
       `Title: "${title}"\n\nVP Update:\n${outputs.vp}\n\nGM Update:\n${outputs.gm}\n\nTeam Update:\n${outputs.team}`
     );
 
-    btn.textContent = 'Saved ✓';
+    btn.textContent = 'Saved!';
     info.innerHTML = `<strong>Saved</strong> to Notion — "${title}"`;
   } catch (e) {
     btn.textContent = 'Save to Notion'; btn.disabled = false;
