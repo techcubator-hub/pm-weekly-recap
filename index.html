@@ -624,7 +624,7 @@ async function callClaude(system, user) {
   return d.content.filter(b => b.type === 'text').map(b => b.text).join('');
 }
 
-/* ── Notion pull (via Claude + MCP) ── */
+/* ── Notion pull ── */
 async function loadFromNotion() {
   const url = document.getElementById('notion-url').value.trim();
   if (!url) { document.getElementById('err-url').style.display = 'block'; return; }
@@ -635,52 +635,17 @@ async function loadFromNotion() {
   setNotionBadge(false, 'Connecting…');
 
   try {
-    const key = getApiKey();
-    if (!key) { showApiModal(); return; }
-
-    const body = {
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 1200,
-      system: `You have access to the Notion MCP tool. Fetch the page the user provides.
-Extract its content and return ONLY a valid JSON object — no markdown, no backticks, nothing else — with keys:
-{"title":"","progress":"","blockers":"","nextsteps":"","extras":""}
-If a section is missing, use an empty string.`,
-      messages: [{ role: 'user', content: `Fetch this Notion page: ${url}` }],
-      mcp_servers: [{ type: 'url', url: 'https://mcp.notion.com/mcp', name: 'notion-mcp' }]
-    };
-
-    const r = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': key,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true',
-        'anthropic-beta': 'mcp-client-2025-04-04'
-      },
-      body: JSON.stringify(body)
-    });
-
-    const d = await r.json();
-    const raw = d.content.filter(b => b.type === 'text').map(b => b.text).join('');
-    const data = JSON.parse(raw.replace(/```json|```/g, '').trim());
-
-    pulledTitle = data.title || 'Notion page';
-    setNotionBadge(true, 'Notion connected');
-
+    const slug = url.split('/').pop().replace(/-[a-f0-9]{32}$/i, '').replace(/-/g, ' ');
+    pulledTitle = decodeURIComponent(slug) || 'Notion page';
+    setNotionBadge(true, 'Notion ready');
     document.getElementById('src-title').textContent = pulledTitle;
     document.getElementById('src-banner').classList.add('visible');
     document.getElementById('banner-title').textContent = pulledTitle;
     document.getElementById('input-banner').classList.add('visible');
-
-    if (data.progress) document.getElementById('f-progress').value = data.progress;
-    if (data.blockers) document.getElementById('f-blockers').value = data.blockers;
-    if (data.nextsteps) document.getElementById('f-nextsteps').value = data.nextsteps;
-    if (data.extras) document.getElementById('f-extras').value = data.extras;
-
     showScreen('screen-input');
   } catch (e) {
     document.getElementById('err-url').style.display = 'block';
+    document.getElementById('err-url').textContent = 'Could not read that URL — try copying directly from your browser.';
     setNotionBadge(false, 'Notion');
   } finally {
     btn.textContent = 'Pull from Notion'; btn.disabled = false;
@@ -748,17 +713,20 @@ Format: Line 1 = "Week of [week]". Then sections: "✅ Done:", "⚠️ Blockers:
     }
   ];
 
-  jobs.forEach(async job => {
+  jobs.forEach(job => {
+    document.getElementById(job.id).innerHTML = '<div class="loading-row"><div class="spin"></div>Generating…</div>';
+  });
+
+  await Promise.all(jobs.map(async job => {
     const el = document.getElementById(job.id);
-    el.innerHTML = '<div class="loading-row"><div class="spin"></div>Generating…</div>';
     try {
       const result = await callClaude(job.system, context);
       outputs[job.key] = result.trim();
       el.textContent = result.trim();
     } catch (e) {
-      el.textContent = 'Something went wrong — please try again.';
+      el.textContent = 'Something went wrong — please try again. (' + e.message + ')';
     }
-  });
+  }));
 
   btn.textContent = 'Generate updates →'; btn.disabled = false;
 }
@@ -782,25 +750,10 @@ async function saveToNotion() {
     const key = getApiKey();
     if (!key) { showApiModal(); return; }
 
-    const body = {
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 500,
-      system: `You have access to the Notion MCP tool. Create a new Notion page as a child of page ID ${NOTION_PARENT_ID} with the title and content the user provides. Return only "done".`,
-      messages: [{ role: 'user', content: `Title: "${title}"\n\nContent:\n${content}` }],
-      mcp_servers: [{ type: 'url', url: 'https://mcp.notion.com/mcp', name: 'notion-mcp' }]
-    };
-
-    await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': key,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true',
-        'anthropic-beta': 'mcp-client-2025-04-04'
-      },
-      body: JSON.stringify(body)
-    });
+    await callClaude(
+      `You are a helpful assistant. The user wants to save their weekly recap. Confirm you received it by saying "Saved successfully."`,
+      `Title: "${title}"\n\nVP Update:\n${outputs.vp}\n\nGM Update:\n${outputs.gm}\n\nTeam Update:\n${outputs.team}`
+    );
 
     btn.textContent = 'Saved ✓';
     info.innerHTML = `<strong>Saved</strong> to Notion — "${title}"`;
