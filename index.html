@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Weekly Recap — Product Lead</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #ffffff;
+    --bg-secondary: #f7f7f5;
+    --bg-tertiary: #f0eeea;
+    --text: #1a1a1a;
+    --text-secondary: #6b6b6b;
+    --text-tertiary: #9a9a9a;
+    --border: rgba(0,0,0,0.12);
+    --border-md: rgba(0,0,0,0.20);
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --purple-light: #EEEDFE;
+    --purple-mid: #534AB7;
+    --purple-dark: #3C3489;
+    --teal-light: #E1F5EE;
+    --teal-dark: #085041;
+    --blue-light: #E6F1FB;
+    --blue-dark: #0C447C;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1c1c1e;
+      --bg-secondary: #2c2c2e;
+      --bg-tertiary: #3a3a3c;
+      --text: #f2f2f7;
+      --text-secondary: #aeaeb2;
+      --text-tertiary: #636366;
+      --border: rgba(255,255,255,0.10);
+      --border-md: rgba(255,255,255,0.18);
+      --purple-light: #2a2660;
+      --purple-mid: #7F77DD;
+      --purple-dark: #AFA9EC;
+      --teal-light: #0d3326;
+      --teal-dark: #9FE1CB;
+      --blue-light: #0c2340;
+      --blue-dark: #85B7EB;
+    }
+  }
+
+  html, body {
+    min-height: 100vh;
+    background: var(--bg-tertiary);
+    font-family: var(--font);
+    color: var(--text);
+    line-height: 1.6;
+  }
+
+  .page {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 32px 16px 64px;
+  }
+
+  .shell {
+    width: 100%;
+    max-width: 720px;
+    background: var(--bg);
+    border-radius: var(--radius-lg);
+    border: 0.5px solid var(--border);
+    overflow: hidden;
+  }
+
+  /* Top bar */
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px;
+    border-bottom: 0.5px solid var(--border);
+  }
+  .topbar-left { display: flex; align-items: center; gap: 10px; }
+  .app-icon {
+    width: 30px; height: 30px;
+    border-radius: 7px;
+    background: var(--purple-light);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .app-icon svg { width: 16px; height: 16px; }
+  .app-name { font-size: 14px; font-weight: 600; color: var(--text); }
+  .app-sub { font-size: 11px; color: var(--text-tertiary); margin-top: 1px; }
+  .notion-pill {
+    display: flex; align-items: center; gap: 5px;
+    padding: 4px 10px;
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-md);
+    font-size: 12px;
+    color: var(--text-secondary);
+    background: var(--bg-secondary);
+  }
+  .ndot { width: 6px; height: 6px; border-radius: 50%; background: var(--text-tertiary); flex-shrink: 0; transition: background 0.3s; }
+  .ndot.green { background: #3db884; }
+
+  /* Step bar */
+  .step-bar {
+    display: flex;
+    align-items: center;
+    padding: 12px 20px;
+    border-bottom: 0.5px solid var(--border);
+    gap: 0;
+  }
+  .si { display: flex; align-items: center; gap: 6px; }
+  .sn {
+    width: 20px; height: 20px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 600; flex-shrink: 0;
+  }
+  .sn.active { background: var(--purple-light); color: var(--purple-dark); }
+  .sn.done { background: var(--bg-secondary); color: var(--text-secondary); font-size: 10px; }
+  .sn.idle { background: transparent; border: 0.5px solid var(--border); color: var(--text-tertiary); }
+  .st { font-size: 12px; font-weight: 500; }
+  .st.active { color: var(--text); }
+  .st.done, .st.idle { color: var(--text-tertiary); }
+  .sdiv { flex: 1; height: 0.5px; background: var(--border); margin: 0 8px; }
+
+  /* Body */
+  .body-pad { padding: 20px; }
+
+  /* Source banner */
+  .src-banner {
+    display: none;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    background: var(--bg-secondary);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-md);
+    margin-bottom: 16px;
+  }
+  .src-banner.visible { display: flex; }
+  .sb-ico {
+    width: 28px; height: 28px; border-radius: 6px;
+    background: var(--purple-light);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .sb-ico svg { width: 14px; height: 14px; }
+  .sb-body { flex: 1; min-width: 0; }
+  .sb-title { font-size: 12px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sb-sub { font-size: 11px; color: var(--text-tertiary); }
+  .sb-link { font-size: 11px; color: var(--purple-mid); font-weight: 500; cursor: pointer; white-space: nowrap; flex-shrink: 0; }
+  .sb-link:hover { text-decoration: underline; }
+
+  /* URL row */
+  .url-row { display: flex; gap: 8px; margin-bottom: 10px; }
+  .url-row input { flex: 1; }
+
+  /* Form fields */
+  .field-group { margin-bottom: 14px; }
+  .fl { font-size: 12px; font-weight: 600; color: var(--text); margin-bottom: 3px; display: block; }
+  .fh { font-size: 11px; color: var(--text-tertiary); margin-bottom: 5px; }
+  .fopt { font-weight: 400; color: var(--text-tertiary); }
+  input[type="text"], textarea, select {
+    width: 100%;
+    border: 0.5px solid var(--border-md);
+    border-radius: var(--radius-md);
+    padding: 9px 11px;
+    font-size: 13px;
+    font-family: var(--font);
+    color: var(--text);
+    background: var(--bg);
+    line-height: 1.6;
+    transition: border-color 0.15s;
+  }
+  input[type="text"]:focus, textarea:focus {
+    outline: none;
+    border-color: var(--purple-mid);
+    box-shadow: 0 0 0 3px rgba(127,119,221,0.12);
+  }
+  input[type="text"]::placeholder, textarea::placeholder { color: var(--text-tertiary); }
+  textarea { resize: vertical; }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .full { grid-column: 1 / -1; }
+
+  .week-row { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+  .week-row label { font-size: 12px; color: var(--text-secondary); flex-shrink: 0; }
+  .week-row input { width: 200px; }
+
+  /* Buttons */
+  .action-row {
+    display: flex; align-items: center; gap: 8px;
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 0.5px solid var(--border);
+    flex-wrap: wrap;
+  }
+  .btn-main {
+    padding: 8px 20px;
+    background: var(--purple-dark);
+    color: var(--purple-light);
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: 13px; font-weight: 600;
+    cursor: pointer;
+    font-family: var(--font);
+    transition: opacity 0.15s;
+  }
+  .btn-main:hover { opacity: 0.88; }
+  .btn-main:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-ghost {
+    padding: 8px 14px;
+    background: transparent;
+    border: 0.5px solid var(--border-md);
+    border-radius: var(--radius-md);
+    font-size: 13px; color: var(--text-secondary);
+    cursor: pointer;
+    font-family: var(--font);
+    transition: background 0.15s;
+  }
+  .btn-ghost:hover { background: var(--bg-secondary); }
+
+  .err { font-size: 12px; color: #A32D2D; margin-top: 8px; display: none; }
+
+  /* Steps visibility */
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  /* Output cards */
+  .oc {
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--bg);
+    margin-bottom: 10px;
+    overflow: hidden;
+  }
+  .oc-head {
+    padding: 9px 14px;
+    border-bottom: 0.5px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .oc-left { display: flex; align-items: center; gap: 8px; }
+  .badge {
+    font-size: 11px; font-weight: 600;
+    padding: 2px 8px;
+    border-radius: var(--radius-md);
+  }
+  .badge.vp { background: var(--purple-light); color: var(--purple-dark); }
+  .badge.gm { background: var(--teal-light); color: var(--teal-dark); }
+  .badge.team { background: var(--blue-light); color: var(--blue-dark); }
+  .oc-desc { font-size: 11px; color: var(--text-tertiary); }
+  .oc-btns { display: flex; gap: 6px; }
+  .oc-btn {
+    padding: 4px 10px;
+    border: 0.5px solid var(--border-md);
+    border-radius: var(--radius-md);
+    font-size: 11px; color: var(--text-secondary);
+    background: transparent; cursor: pointer;
+    font-family: var(--font);
+    transition: background 0.15s, color 0.15s;
+  }
+  .oc-btn:hover { background: var(--bg-secondary); color: var(--text); }
+  .oc-btn.slack-btn { border-color: #4A154B; color: #4A154B; }
+  .oc-btn.slack-btn:hover { background: #fdf0ff; }
+  @media (prefers-color-scheme: dark) {
+    .oc-btn.slack-btn { border-color: #c084fc; color: #c084fc; }
+    .oc-btn.slack-btn:hover { background: #2d1f3d; }
+  }
+  .oc-body {
+    padding: 14px;
+    font-size: 13px; color: var(--text);
+    line-height: 1.8; white-space: pre-wrap;
+    min-height: 56px;
+  }
+  .loading-row {
+    display: flex; align-items: center; gap: 8px;
+    color: var(--text-tertiary); font-size: 13px;
+  }
+  .spin {
+    width: 13px; height: 13px;
+    border: 1.5px solid var(--border-md);
+    border-top-color: var(--purple-mid);
+    border-radius: 50%;
+    animation: sp 0.7s linear infinite; flex-shrink: 0;
+  }
+  @keyframes sp { to { transform: rotate(360deg); } }
+
+  /* Save bar */
+  .save-bar {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 13px;
+    background: var(--bg-secondary);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-md);
+    margin-top: 4px;
+  }
+  .sv-ico {
+    width: 26px; height: 26px; border-radius: 5px;
+    background: var(--purple-light);
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .sv-ico svg { width: 14px; height: 14px; }
+  .sv-text { flex: 1; font-size: 12px; color: var(--text-secondary); }
+  .sv-text strong { color: var(--text); font-weight: 600; }
+  .sv-btn {
+    padding: 5px 12px;
+    background: var(--purple-dark);
+    color: var(--purple-light);
+    border: none; border-radius: var(--radius-md);
+    font-size: 12px; font-weight: 600;
+    cursor: pointer; white-space: nowrap;
+    font-family: var(--font);
+    transition: opacity 0.15s;
+  }
+  .sv-btn:hover { opacity: 0.88; }
+  .sv-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* API key modal */
+  .modal-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.4);
+    z-index: 100;
+    align-items: center; justify-content: center;
+  }
+  .modal-overlay.visible { display: flex; }
+  .modal {
+    background: var(--bg);
+    border-radius: var(--radius-lg);
+    border: 0.5px solid var(--border-md);
+    padding: 24px;
+    width: 100%; max-width: 420px;
+    margin: 16px;
+  }
+  .modal h3 { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
+  .modal p { font-size: 13px; color: var(--text-secondary); margin-bottom: 16px; line-height: 1.6; }
+  .modal-row { display: flex; gap: 8px; }
+  .modal-row input { flex: 1; }
+  .modal-note { font-size: 11px; color: var(--text-tertiary); margin-top: 8px; }
+
+  @media (max-width: 600px) {
+    .grid2 { grid-template-columns: 1fr; }
+    .full { grid-column: 1; }
+    .page { padding: 16px 8px 48px; }
+    .body-pad { padding: 14px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+  <div class="shell">
+
+    <!-- Top bar -->
+    <div class="topbar">
+      <div class="topbar-left">
+        <div class="app-icon">
+          <svg viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="5" height="5" rx="1" fill="#534AB7"/><rect x="9" y="2" width="5" height="5" rx="1" fill="#AFA9EC"/><rect x="2" y="9" width="5" height="5" rx="1" fill="#AFA9EC"/><rect x="9" y="9" width="5" height="5" rx="1" fill="#534AB7"/></svg>
+        </div>
+        <div>
+          <div class="app-name">Weekly recap</div>
+          <div class="app-sub">Senior product lead</div>
+        </div>
+      </div>
+      <div class="notion-pill">
+        <div class="ndot" id="ndot"></div>
+        <span id="nbadge-text">Notion</span>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════
+         SCREEN 1 — SOURCE
+    ══════════════════════════════════════ -->
+    <div class="screen active" id="screen-source">
+      <div class="step-bar">
+        <div class="si"><div class="sn active">1</div><span class="st active">Source</span></div>
+        <div class="sdiv"></div>
+        <div class="si"><div class="sn idle">2</div><span class="st idle">Your updates</span></div>
+        <div class="sdiv"></div>
+        <div class="si"><div class="sn idle">3</div><span class="st idle">Send</span></div>
+      </div>
+      <div class="body-pad">
+        <div class="field-group">
+          <label class="fl">Paste a Notion page URL</label>
+          <div class="fh">We'll pull your notes directly. Or skip and type manually below.</div>
+          <div class="url-row">
+            <input type="text" id="notion-url" placeholder="https://notion.so/…" />
+            <button class="btn-main" id="pull-btn" onclick="loadFromNotion()">Pull from Notion</button>
+          </div>
+          <div class="err" id="err-url">Couldn't read that page. Check the URL and your API key.</div>
+        </div>
+
+        <div class="src-banner" id="src-banner">
+          <div class="sb-ico">
+            <svg viewBox="0 0 14 14" fill="none"><rect width="14" height="14" rx="3" fill="#534AB7"/><path d="M4 4h6M4 7h6M4 10h4" stroke="#EEEDFE" stroke-width="1.2" stroke-linecap="round"/></svg>
+          </div>
+          <div class="sb-body">
+            <div class="sb-title" id="src-title">—</div>
+            <div class="sb-sub">Content pulled · edit before generating</div>
+          </div>
+          <div class="sb-link" onclick="showScreen('screen-source')">Change</div>
+        </div>
+
+        <div class="action-row">
+          <button class="btn-ghost" onclick="showScreen('screen-input')">Skip — type manually →</button>
+          <button class="btn-ghost" onclick="showApiModal()" style="margin-left:auto;font-size:11px;color:var(--text-tertiary);">⚙ API key</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════
+         SCREEN 2 — INPUT
+    ══════════════════════════════════════ -->
+    <div class="screen" id="screen-input">
+      <div class="step-bar">
+        <div class="si"><div class="sn done">✓</div><span class="st done">Source</span></div>
+        <div class="sdiv"></div>
+        <div class="si"><div class="sn active">2</div><span class="st active">Your updates</span></div>
+        <div class="sdiv"></div>
+        <div class="si"><div class="sn idle">3</div><span class="st idle">Send</span></div>
+      </div>
+      <div class="body-pad">
+
+        <div class="src-banner" id="input-banner">
+          <div class="sb-ico">
+            <svg viewBox="0 0 14 14" fill="none"><rect width="14" height="14" rx="3" fill="#534AB7"/><path d="M4 4h6M4 7h6M4 10h4" stroke="#EEEDFE" stroke-width="1.2" stroke-linecap="round"/></svg>
+          </div>
+          <div class="sb-body">
+            <div class="sb-title" id="banner-title">—</div>
+            <div class="sb-sub">Pulled from Notion · edit below if needed</div>
+          </div>
+          <div class="sb-link" onclick="showScreen('screen-source')">Change</div>
+        </div>
+
+        <div class="week-row">
+          <label>Week of</label>
+          <input type="text" id="week-of" placeholder="e.g. Apr 14–18, 2025" />
+        </div>
+
+        <div class="grid2">
+          <div class="field-group full">
+            <label class="fl">Progress</label>
+            <div class="fh">Key milestones, decisions made, things shipped</div>
+            <textarea id="f-progress" rows="4" placeholder="e.g. Completed user research, signed off Q2 roadmap, shipped v2.1 to staging…"></textarea>
+          </div>
+          <div class="field-group">
+            <label class="fl">Blockers &amp; risks</label>
+            <div class="fh">Dependencies, open decisions slowing things down</div>
+            <textarea id="f-blockers" rows="4" placeholder="e.g. Waiting on legal approval, design resource gap, unclear priority on X vs Y…"></textarea>
+          </div>
+          <div class="field-group">
+            <label class="fl">Next steps</label>
+            <div class="fh">What's planned for next week</div>
+            <textarea id="f-nextsteps" rows="4" placeholder="e.g. Sprint planning Mon, finalize payment flow designs, align with eng on API…"></textarea>
+          </div>
+          <div class="field-group full">
+            <label class="fl">Extras <span class="fopt">(optional)</span></label>
+            <div class="fh">Wins, shoutouts, context for specific audiences</div>
+            <textarea id="f-extras" rows="2" placeholder="e.g. Team crushed the data migration, VP asked about timeline last week…"></textarea>
+          </div>
+        </div>
+
+        <div class="err" id="err-input">Please fill in Progress, Blockers, and Next Steps before continuing.</div>
+
+        <div class="action-row">
+          <button class="btn-main" id="gen-btn" onclick="generate()">Generate updates →</button>
+          <button class="btn-ghost" onclick="showScreen('screen-source')">← Back</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════
+         SCREEN 3 — OUTPUT
+    ══════════════════════════════════════ -->
+    <div class="screen" id="screen-output">
+      <div class="step-bar">
+        <div class="si"><div class="sn done">✓</div><span class="st done">Source</span></div>
+        <div class="sdiv"></div>
+        <div class="si"><div class="sn done">✓</div><span class="st done">Your updates</span></div>
+        <div class="sdiv"></div>
+        <div class="si"><div class="sn active">3</div><span class="st active">Send</span></div>
+      </div>
+      <div class="body-pad">
+
+        <div class="oc">
+          <div class="oc-head">
+            <div class="oc-left">
+              <span class="badge vp">VP</span>
+              <span class="oc-desc">High-level summary</span>
+            </div>
+            <div class="oc-btns">
+              <button class="oc-btn slack-btn" onclick="copySlack('out-vp', this)">Copy for Slack</button>
+              <button class="oc-btn" onclick="copyPlain('out-vp', this)">Copy</button>
+            </div>
+          </div>
+          <div class="oc-body" id="out-vp"><div class="loading-row"><div class="spin"></div>Generating VP update…</div></div>
+        </div>
+
+        <div class="oc">
+          <div class="oc-head">
+            <div class="oc-left">
+              <span class="badge gm">GM</span>
+              <span class="oc-desc">Business focus</span>
+            </div>
+            <div class="oc-btns">
+              <button class="oc-btn slack-btn" onclick="copySlack('out-gm', this)">Copy for Slack</button>
+              <button class="oc-btn" onclick="copyPlain('out-gm', this)">Copy</button>
+            </div>
+          </div>
+          <div class="oc-body" id="out-gm"><div class="loading-row"><div class="spin"></div>Generating GM update…</div></div>
+        </div>
+
+        <div class="oc">
+          <div class="oc-head">
+            <div class="oc-left">
+              <span class="badge team">Team</span>
+              <span class="oc-desc">Detailed · blockers &amp; action items</span>
+            </div>
+            <div class="oc-btns">
+              <button class="oc-btn slack-btn" onclick="copySlack('out-team', this)">Copy for Slack</button>
+              <button class="oc-btn" onclick="copyPlain('out-team', this)">Copy</button>
+            </div>
+          </div>
+          <div class="oc-body" id="out-team"><div class="loading-row"><div class="spin"></div>Generating team update…</div></div>
+        </div>
+
+        <div class="save-bar">
+          <div class="sv-ico">
+            <svg viewBox="0 0 14 14" fill="none"><rect width="14" height="14" rx="3" fill="#534AB7"/><path d="M4 4h6M4 7h6M4 10h4" stroke="#EEEDFE" stroke-width="1.2" stroke-linecap="round"/></svg>
+          </div>
+          <div class="sv-text" id="sv-text">Save all three versions to <strong>Notion</strong></div>
+          <button class="sv-btn" id="sv-btn" onclick="saveToNotion()">Save to Notion</button>
+        </div>
+
+        <div class="action-row">
+          <button class="btn-ghost" onclick="showScreen('screen-input')">← Edit inputs</button>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /shell -->
+</div><!-- /page -->
+
+<!-- API Key Modal -->
+<div class="modal-overlay" id="api-modal">
+  <div class="modal">
+    <h3>Anthropic API key</h3>
+    <p>Your key is stored locally in this browser only and never sent anywhere except the Anthropic API.</p>
+    <div class="modal-row">
+      <input type="password" id="api-key-input" placeholder="sk-ant-…" />
+      <button class="btn-main" onclick="saveApiKey()">Save</button>
+    </div>
+    <div class="modal-note">Get your key at console.anthropic.com → API Keys</div>
+    <div class="action-row" style="border:none;margin-top:12px;padding-top:0">
+      <button class="btn-ghost" onclick="hideApiModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const NOTION_PARENT_ID = '345448518f5c80369c8be55b2735aeac';
+let pulledTitle = '';
+let weekOf = '';
+let outputs = { vp: '', gm: '', team: '' };
+
+/* ── Screens ── */
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+/* ── API key ── */
+function getApiKey() { return localStorage.getItem('anthropic_api_key') || ''; }
+function saveApiKey() {
+  const k = document.getElementById('api-key-input').value.trim();
+  if (k) { localStorage.setItem('anthropic_api_key', k); hideApiModal(); }
+}
+function showApiModal() {
+  document.getElementById('api-key-input').value = getApiKey();
+  document.getElementById('api-modal').classList.add('visible');
+}
+function hideApiModal() { document.getElementById('api-modal').classList.remove('visible'); }
+document.getElementById('api-modal').addEventListener('click', e => {
+  if (e.target === e.currentTarget) hideApiModal();
+});
+
+/* ── Notion badge ── */
+function setNotionBadge(connected, label) {
+  document.getElementById('ndot').className = 'ndot' + (connected ? ' green' : '');
+  document.getElementById('nbadge-text').textContent = label || 'Notion';
+}
+
+/* ── Claude API call ── */
+async function callClaude(system, user) {
+  const key = getApiKey();
+  if (!key) { showApiModal(); throw new Error('No API key'); }
+
+  const body = {
+    model: 'claude-sonnet-4-20250514',
+    max_tokens: 1000,
+    system,
+    messages: [{ role: 'user', content: user }]
+  };
+
+  const r = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': key,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
+    body: JSON.stringify(body)
+  });
+
+  if (!r.ok) {
+    const e = await r.json().catch(() => ({}));
+    throw new Error(e?.error?.message || `HTTP ${r.status}`);
+  }
+  const d = await r.json();
+  return d.content.filter(b => b.type === 'text').map(b => b.text).join('');
+}
+
+/* ── Notion pull (via Claude + MCP) ── */
+async function loadFromNotion() {
+  const url = document.getElementById('notion-url').value.trim();
+  if (!url) { document.getElementById('err-url').style.display = 'block'; return; }
+  document.getElementById('err-url').style.display = 'none';
+
+  const btn = document.getElementById('pull-btn');
+  btn.textContent = 'Loading…'; btn.disabled = true;
+  setNotionBadge(false, 'Connecting…');
+
+  try {
+    const key = getApiKey();
+    if (!key) { showApiModal(); return; }
+
+    const body = {
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 1200,
+      system: `You have access to the Notion MCP tool. Fetch the page the user provides.
+Extract its content and return ONLY a valid JSON object — no markdown, no backticks, nothing else — with keys:
+{"title":"","progress":"","blockers":"","nextsteps":"","extras":""}
+If a section is missing, use an empty string.`,
+      messages: [{ role: 'user', content: `Fetch this Notion page: ${url}` }],
+      mcp_servers: [{ type: 'url', url: 'https://mcp.notion.com/mcp', name: 'notion-mcp' }]
+    };
+
+    const r = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': key,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true',
+        'anthropic-beta': 'mcp-client-2025-04-04'
+      },
+      body: JSON.stringify(body)
+    });
+
+    const d = await r.json();
+    const raw = d.content.filter(b => b.type === 'text').map(b => b.text).join('');
+    const data = JSON.parse(raw.replace(/```json|```/g, '').trim());
+
+    pulledTitle = data.title || 'Notion page';
+    setNotionBadge(true, 'Notion connected');
+
+    document.getElementById('src-title').textContent = pulledTitle;
+    document.getElementById('src-banner').classList.add('visible');
+    document.getElementById('banner-title').textContent = pulledTitle;
+    document.getElementById('input-banner').classList.add('visible');
+
+    if (data.progress) document.getElementById('f-progress').value = data.progress;
+    if (data.blockers) document.getElementById('f-blockers').value = data.blockers;
+    if (data.nextsteps) document.getElementById('f-nextsteps').value = data.nextsteps;
+    if (data.extras) document.getElementById('f-extras').value = data.extras;
+
+    showScreen('screen-input');
+  } catch (e) {
+    document.getElementById('err-url').style.display = 'block';
+    setNotionBadge(false, 'Notion');
+  } finally {
+    btn.textContent = 'Pull from Notion'; btn.disabled = false;
+  }
+}
+
+/* ── Copy helpers ── */
+function toSlack(text) {
+  return text
+    .replace(/\*\*(.*?)\*\*/g, '*$1*')
+    .replace(/^- /gm, '• ');
+}
+function copyPlain(id, btn) {
+  navigator.clipboard.writeText(document.getElementById(id).innerText).then(() => {
+    const orig = btn.textContent; btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = orig, 1600);
+  });
+}
+function copySlack(id, btn) {
+  navigator.clipboard.writeText(toSlack(document.getElementById(id).innerText)).then(() => {
+    const orig = btn.textContent; btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = orig, 1600);
+  });
+}
+
+/* ── Generate ── */
+async function generate() {
+  const progress = document.getElementById('f-progress').value.trim();
+  const blockers = document.getElementById('f-blockers').value.trim();
+  const nextsteps = document.getElementById('f-nextsteps').value.trim();
+  const extras = document.getElementById('f-extras').value.trim();
+  weekOf = document.getElementById('week-of').value.trim() || 'this week';
+
+  if (!progress || !blockers || !nextsteps) {
+    document.getElementById('err-input').style.display = 'block'; return;
+  }
+  document.getElementById('err-input').style.display = 'none';
+
+  const btn = document.getElementById('gen-btn');
+  btn.textContent = 'Generating…'; btn.disabled = true;
+
+  showScreen('screen-output');
+  outputs = { vp: '', gm: '', team: '' };
+
+  const context = `Week of: ${weekOf}
+Progress / accomplishments: ${progress}
+Blockers and risks: ${blockers}
+Next steps: ${nextsteps}${extras ? '\nAdditional context: ' + extras : ''}`;
+
+  const jobs = [
+    {
+      id: 'out-vp', key: 'vp',
+      system: `You are a senior product lead writing a weekly update for your VP. Concise, executive-ready.
+Format: Line 1 = "Week of [week]". Blank line. Then 3–5 bullet points using "- " prefix. Lead with outcomes, not activities. Flag high-priority risks only. Plain text only.`
+    },
+    {
+      id: 'out-gm', key: 'gm',
+      system: `You are a senior product lead writing a weekly update for your General Manager. Focus on business impact, revenue implications, risk framing.
+Format: Line 1 = "Week of [week]". Then three labeled sections: "Progress:", "Risks:", "Next steps:" — each followed by 2–3 sentences. Plain text, no bullet points, no headers.`
+    },
+    {
+      id: 'out-team', key: 'team',
+      system: `You are a senior product lead writing a detailed internal team update. Specific, direct, action-oriented.
+Format: Line 1 = "Week of [week]". Then sections: "✅ Done:", "⚠️ Blockers:", "🔜 Next week:", and if needed "Action items:". Under each, use "- " bullets. Be specific about owners and deadlines. Warm but professional.`
+    }
+  ];
+
+  jobs.forEach(async job => {
+    const el = document.getElementById(job.id);
+    el.innerHTML = '<div class="loading-row"><div class="spin"></div>Generating…</div>';
+    try {
+      const result = await callClaude(job.system, context);
+      outputs[job.key] = result.trim();
+      el.textContent = result.trim();
+    } catch (e) {
+      el.textContent = 'Something went wrong — please try again.';
+    }
+  });
+
+  btn.textContent = 'Generate updates →'; btn.disabled = false;
+}
+
+/* ── Save to Notion ── */
+async function saveToNotion() {
+  const btn = document.getElementById('sv-btn');
+  const info = document.getElementById('sv-text');
+
+  if (!outputs.vp && !outputs.gm && !outputs.team) {
+    info.innerHTML = '<strong>Still generating</strong> — wait a moment then try again.'; return;
+  }
+
+  btn.textContent = 'Saving…'; btn.disabled = true;
+  info.textContent = 'Saving to Notion…';
+
+  const title = `Weekly recap — ${weekOf}`;
+  const content = `## VP update\n${outputs.vp}\n\n---\n\n## GM update\n${outputs.gm}\n\n---\n\n## Team update\n${outputs.team}`;
+
+  try {
+    const key = getApiKey();
+    if (!key) { showApiModal(); return; }
+
+    const body = {
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 500,
+      system: `You have access to the Notion MCP tool. Create a new Notion page as a child of page ID ${NOTION_PARENT_ID} with the title and content the user provides. Return only "done".`,
+      messages: [{ role: 'user', content: `Title: "${title}"\n\nContent:\n${content}` }],
+      mcp_servers: [{ type: 'url', url: 'https://mcp.notion.com/mcp', name: 'notion-mcp' }]
+    };
+
+    await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': key,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true',
+        'anthropic-beta': 'mcp-client-2025-04-04'
+      },
+      body: JSON.stringify(body)
+    });
+
+    btn.textContent = 'Saved ✓';
+    info.innerHTML = `<strong>Saved</strong> to Notion — "${title}"`;
+  } catch (e) {
+    btn.textContent = 'Save to Notion'; btn.disabled = false;
+    info.innerHTML = '<span style="color:#A32D2D">Save failed — please try again.</span>';
+  }
+}
+
+/* ── Init ── */
+if (getApiKey()) setNotionBadge(false, 'Notion');
+</script>
+</body>
+</html>
